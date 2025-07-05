@@ -1,63 +1,82 @@
-import generateToken from "../utils/generatetokens.js";
-import  User  from "../model/userModel.js";
-
-import getDataUrl from "../utils/urlGenerator.js";
+import { User } from "../models/userModel.js";
+import TryCatch from "../utils/Trycatch.js";
+import generateToken from "../utils/generateToken.js";
+import getDataUrl from "../utils/urlGenrator.js";
 import bcrypt from "bcrypt";
 import cloudinary from "cloudinary";
 
-const registerUser = async (req, res) => {
-  try {
-    const { name, email, password, gender } = req.body;
-    const file = req.file;
+export const registerUser = TryCatch(async (req, res) => {
+  const { name, email, password, gender } = req.body;
 
-    if (!name || !email || !password || !gender || !file) {
-      return res.status(400).json({
-        message: "Please provide all required fields",
-      });
-    }
+  const file = req.file;
 
-    let existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({
-        message: "User already exists",
-      });
-    }
-
-    // Convert file buffer to Data URI
-    const fileUri = getDataUrl(file);
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Upload image to Cloudinary
-    const uploadResult = await cloudinary.v2.uploader.upload(fileUri.content, {
-      folder: "profilePics", // optional
-    });
-
-    // Create new user
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      gender,
-      profilePic: {
-        id: uploadResult.public_id,
-        url: uploadResult.secure_url,
-      },
-    });
-
-    // Send token + response
-    generateToken(user._id, res);
-
-    res.status(201).json({
-      message: "User registered successfully",
-      user,
-    });
-  } catch (err) {
-    console.error("Register Error:", err);
-    res.status(500).json({
-      message: "Internal Server Error",
-      error: err.message,
+  if (!name || !email || !password || !gender || !file) {
+    return res.status(400).json({
+      message: "Please give all values",
     });
   }
-};
 
-export default registerUser;
+  let user = await User.findOne({ email });
+
+  if (user)
+    return res.status(400).json({
+      message: "User Already Exist",
+    });
+
+  const fileUrl = getDataUrl(file);
+
+  const hashPassword = await bcrypt.hash(password, 10);
+
+  const myCloud = await cloudinary.v2.uploader.upload(fileUrl.content);
+
+  user = await User.create({
+    name,
+    email,
+    password: hashPassword,
+    gender,
+    profilePic: {
+      id: myCloud.public_id,
+      url: myCloud.secure_url,
+    },
+  });
+
+  generateToken(user._id, res);
+
+  res.status(201).json({
+    message: "User Registered",
+    user,
+  });
+});
+
+export const loginUser = TryCatch(async (req, res) => {
+  const { email, password } = req.body;
+
+  const user = await User.findOne({ email });
+
+  if (!user)
+    return res.status(400).json({
+      message: "Invalid Credentials",
+    });
+
+  const comparePassword = await bcrypt.compare(password, user.password);
+
+  if (!comparePassword)
+    return res.status(400).json({
+      message: "Invalid Credentials",
+    });
+
+  generateToken(user._id, res);
+
+  res.json({
+    message: "User Logged in",
+    user,
+  });
+});
+
+export const logoutUser = TryCatch((req, res) => {
+  res.cookie("token", "", { maxAge: 0 });
+
+  res.json({
+    message: "Logged out successfully",
+  });
+});
