@@ -2,7 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import { connectDb } from "./database/db.js";
 import cloudinary from 'cloudinary';
-
+import cookieParser from "cookie-parser";
 dotenv.config();
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -19,6 +19,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 //midddleware 
 app.use(express.json());
+app.use(cookieParser());
 app.get("/", (req, res) => {
   res.send("Hello, world!");
 });
