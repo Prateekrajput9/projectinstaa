@@ -9,4 +9,4 @@ router.post("/register", uploadFile,registerUser);
 router.post("/login",loginUser);
 router.post("/logout",logoutUser);
 
-export default router; // <-- THIS LINE IS REQUIRED FOR DEFAULT EXPORT
+export default router; 
