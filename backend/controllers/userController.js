@@ -82,6 +82,7 @@ export const updateProfile = TryCatch(async (req, res) => {
   if (name) {
     user.name = name;
   }
+  console.log("Updating profile for:", req.user._id);
 
   const file = req.file;
   if (file) {
